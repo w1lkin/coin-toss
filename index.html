@@ -231,9 +231,59 @@ body {
     track._t = setTimeout(pickCentered, 120);
   });
 
+  var coin = document.getElementById('coin');
+  var resultEl = document.getElementById('result');
+  var btnToss = document.getElementById('btn-toss');
+  var wishInput = document.getElementById('wish-input');
+  var flipping = false;
+
+  var state = { throws: 0, missStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
+
+  function tossCoin() {
+    if (flipping) return; // animating
+    state.wish = (wishInput.value || '').trim();
+    state.buddhaName = BUDDHAS[currentBuddhaIndex].name;
+    state.throws += 1;
+
+    var b = BUDDHAS[currentBuddhaIndex];
+    var ok = Math.random() < b.rate;
+
+    flipping = true;
+    coin.classList.remove('still');
+    btnToss.disabled = true;
+    // 720°(2 turns)→正面(字)在上；540°(1.5 turns)→反面(花)在上。让结果面朝上。
+    coin.style.transform = ok ? 'rotateY(720deg)' : 'rotateY(540deg)';
+
+    setTimeout(function () {
+      coin.classList.add('still');
+      btnToss.disabled = false;
+      flipping = false;
+
+      if (ok) {
+        state.accepted = true;
+        state.missStreak = 0;
+        resultEl.className = 'gold';
+        resultEl.innerHTML = '✨ 佛已应允 · ' + b.words;
+      } else {
+        state.missStreak += 1;
+        resultEl.className = '';
+        resultEl.textContent = '🪙 再试一次';
+      }
+      updateStatus();
+    }, 700);
+  }
+
+  function updateStatus() {
+    document.getElementById('status-throws').textContent = state.throws;
+    document.getElementById('status-miss').textContent = state.missStreak;
+  }
+
+  btnToss.addEventListener('click', tossCoin);
+
   window.BUDDHAS = BUDDHAS;
   window.selectBuddha = selectBuddha;
   window.renderBuddhas = renderBuddhas;
+  window.updateStatus = updateStatus;
 })();
 </script>
 </body>
