@@ -60,7 +60,7 @@ body {
 .buddha-slot.selected { border-color: #ffd76a; }
 .buddha-slot img {
   width: 120px; height: 120px; object-fit: contain; image-rendering: pixelated;
-  margin-bottom: 6px; background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(0,0,0,0.2) 100%); border-radius: 12px;
+  margin-bottom: 6px; background: #3a1f0a; border-radius: 12px;
 }
 .buddha-slot .slot-emoji {
   width: 120px; height: 120px; display: flex; align-items: center; justify-content: center;
@@ -88,7 +88,7 @@ body {
   position: relative; width: 100%; height: 100%; transform-style: preserve-3d;
   transition: transform 1.25s cubic-bezier(.3,.7,.15,1);
 }
-.coin-face { position: absolute; inset: 0; border-radius: 50%; backface-visibility: hidden; background-size: cover; background-position: center; }
+.coin-face { position: absolute; inset: 0; border-radius: 50%; backface-visibility: hidden; background-size: 110%; background-position: center; background-color: #2a1a0e; }
 #coin-head {
   background-image: url('assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-59-50.png');
 }
@@ -158,6 +158,17 @@ body {
   0% { transform: translateY(-80px) rotate(0deg); opacity: 1; }
   100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
 }
+
+/* 结算弹窗 */
+.settle-card { max-width: 320px; }
+.settle-card .sc-icon { font-size: 40px; margin-bottom: 6px; }
+.settle-card .sc-title { font-size: 18px; font-weight: 700; color: #ffd76a; margin-bottom: 10px; }
+.settle-card .sc-row { font-size: 14px; color: #d8c39a; line-height: 2; }
+.settle-card .sc-row span { color: #f5e6c8; }
+.settle-card .sc-btns { display: flex; gap: 10px; margin-top: 16px; }
+.settle-card .sc-btns button { flex: 1; padding: 9px; border-radius: 10px; border: 1px solid #ffd76a; font-size: 15px; cursor: pointer; }
+.settle-card .sc-confirm { background: linear-gradient(180deg, #ffd76a, #e8a838); color: #5a3206; border: none; font-weight: 700; }
+.settle-card .sc-cancel { background: transparent; color: #f5e6c8; }
 </style>
 </head>
 <body>
@@ -168,6 +179,19 @@ body {
     <div class="cc-bless" id="cc-bless"></div>
     <div class="cc-stats" id="cc-stats"></div>
     <button class="cc-close" id="cc-close">继续</button>
+  </div>
+</div>
+<div id="settle-overlay" class="celebrate-overlay">
+  <div class="celebrate-card settle-card">
+    <div class="sc-icon">📿</div>
+    <div class="sc-title">结束本次投币</div>
+    <div class="sc-row">心愿：<span id="sc-wish"></span></div>
+    <div class="sc-row">佛前：<span id="sc-buddha"></span></div>
+    <div class="sc-row">投了 <span id="sc-throws"></span> 次 · <span id="sc-result"></span></div>
+    <div class="sc-btns">
+      <button class="sc-cancel" id="sc-cancel">再投一会</button>
+      <button class="sc-confirm" id="sc-confirm">结束</button>
+    </div>
   </div>
 </div>
 <div id="app" style="display:none">
@@ -417,6 +441,16 @@ body {
   }
 
   function settle() {
+    // 弹出结算框
+    var buddha = BUDDHAS[currentBuddhaIndex];
+    document.getElementById('sc-wish').textContent = state.wish || '（未写心愿）';
+    document.getElementById('sc-buddha').textContent = state.buddhaName || buddha.name;
+    document.getElementById('sc-throws').textContent = state.throws;
+    document.getElementById('sc-result').textContent = state.accepted ? '已应允 ✅' : '未中';
+    document.getElementById('settle-overlay').classList.add('show');
+  }
+
+  function doSettle() {
     HISTORY.push({
       wish: state.wish || '（未写心愿）',
       buddha: state.buddhaName,
@@ -428,7 +462,16 @@ body {
     saveHistory();
     renderHistory();
     resetRound();
+    document.getElementById('settle-overlay').classList.remove('show');
   }
+
+  document.getElementById('sc-confirm').addEventListener('click', doSettle);
+  document.getElementById('sc-cancel').addEventListener('click', function () {
+    document.getElementById('settle-overlay').classList.remove('show');
+  });
+  document.getElementById('settle-overlay').addEventListener('click', function (e) {
+    if (e.target === document.getElementById('settle-overlay')) document.getElementById('settle-overlay').classList.remove('show');
+  });
 
   function renderHistory() {
     var box = document.getElementById('history');
@@ -504,6 +547,28 @@ body {
 </script>
 <script>
 (function () {
+  // 预加载所有图片后显示游戏
+  var IMAGES = [].concat(
+    BUDDHAS.filter(function(b){return b.img;}).map(function(b){return b.img;}),
+    ['assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-59-50.png',
+     'assets/pixel_art_sprite__retro_16_bit_2026-08-20T07-00-05.png']
+  );
+
+  function preloadAll(onDone) {
+    var loaded = 0, total = IMAGES.length;
+    if (total === 0) return onDone();
+    IMAGES.forEach(function (src) {
+      var img = new Image();
+      img.onload = img.onerror = function () {
+        loaded++;
+        if (loaded >= total) onDone();
+      };
+      img.src = src;
+    });
+    // 超时兜底 3s
+    setTimeout(function () { if (loaded < total) onDone(); }, 3000);
+  }
+
   function startGame() {
     if (window.renderBuddhas) window.renderBuddhas();
     if (window.renderHistory) window.renderHistory();
@@ -511,12 +576,18 @@ body {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('app').style.display = '';
   }
-  if (typeof GamePlatform !== 'undefined') {
-    GamePlatform.init();
-    GamePlatform.mountGate({ gameId: 'coin-toss' }).then(startGame).catch(startGame);
-  } else {
-    startGame();
+
+  function boot() {
+    preloadAll(function () {
+      if (typeof GamePlatform !== 'undefined') {
+        GamePlatform.init();
+        GamePlatform.mountGate({ gameId: 'coin-toss' }).then(startGame).catch(startGame);
+      } else {
+        startGame();
+      }
+    });
   }
+  boot();
 })();
 </script>
 </body>
