@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="api-base" content="https://api.w1lkin.site">
 <title>佛前投币</title>
+<link rel="preload" as="image" href="assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-59-50.png">
+<link rel="preload" as="image" href="assets/pixel_art_sprite__retro_16_bit_2026-08-20T07-00-05.png">
+<link rel="preload" as="image" href="assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-57-47.png">
+<link rel="preload" as="image" href="assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-05.png">
+<link rel="preload" as="image" href="assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-20.png">
+<link rel="preload" as="image" href="assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-42.png">
+<link rel="preload" as="image" href="assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-59.png">
+<link rel="preload" as="image" href="assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-59-16.png">
+<link rel="preload" as="image" href="assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-59-34.png">
 <meta property="og:title" content="佛前投币">
 <meta property="og:description" content="写心愿，投币许愿，心诚则灵。">
 <meta property="og:type" content="website">
@@ -159,15 +168,69 @@ body {
   'use strict';
 
   var BUDDHAS = [
-    { id:'self',  name:'信自己', rate:0.50, words:'心诚则灵，你自己最灵',           img:null },
-    { id:'guanyin', name:'观音', rate:0.55, words:'慈悲加持，所愿皆成',           img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-57-47.png' },
-    { id:'mile',  name:'弥勒', rate:0.60, words:'笑口常开，好运自然来',           img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-05.png' },
-    { id:'rulai', name:'如来', rate:0.50, words:'如来见证，静待花开',             img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-20.png' },
-    { id:'wenshu',name:'文殊', rate:0.53, words:'智慧光明，迷障尽除',             img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-42.png' },
-    { id:'puxian',name:'普贤', rate:0.52, words:'行愿圆满，前路坦途',             img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-59.png' },
-    { id:'dizang',name:'地藏', rate:0.54, words:'誓愿深重，苦难得度',             img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-59-16.png' },
-    { id:'yaoshi',name:'药师', rate:0.56, words:'消灾延寿，身心安康',             img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-59-34.png' }
+    { id:'self',  name:'信自己', rate:0.50, words:'心诚则灵，你自己最灵',  img:null,
+      titles:['笃定的你','心诚的你','相信自己的你'] },
+    { id:'guanyin', name:'观音', rate:0.55, words:'慈悲加持，所愿皆成',  img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-57-47.png',
+      titles:['大慈大悲的观音菩萨','慈航普渡的观世音','愿垂慈悯的观音'] },
+    { id:'mile',  name:'弥勒', rate:0.60, words:'笑口常开，好运自然来',  img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-05.png',
+      titles:['袒腹欢颜的弥勒','笑口常开的弥勒佛','喜气盈门的弥勒'] },
+    { id:'rulai', name:'如来', rate:0.50, words:'如来见证，静待花开',  img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-20.png',
+      titles:['清净圆满的如来','我佛如来','万法皆空的如来'] },
+    { id:'wenshu',name:'文殊', rate:0.53, words:'智慧光明，迷障尽除',  img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-42.png',
+      titles:['智慧第一的文殊','慧剑出尘的文殊师利','妙光妙智的文殊'] },
+    { id:'puxian',name:'普贤', rate:0.52, words:'行愿圆满，前路坦途',  img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-59.png',
+      titles:['行愿无碍的普贤','大行大愿的普贤菩萨','坚笃行愿的普贤'] },
+    { id:'dizang',name:'地藏', rate:0.54, words:'誓愿深重，苦难得度',  img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-59-16.png',
+      titles:['誓度众生的地藏','慈心悲愿的地藏王','静护十方的地藏'] },
+    { id:'yaoshi',name:'药师', rate:0.56, words:'消灾延寿，身心安康',  img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-59-34.png',
+      titles:['消灾延寿的药师佛','琉璃光明的药师如来','福慧双修的药师'] }
   ];
+
+  // 心愿主题分类：按关键词匹配，命中后生成对应风格的祝福
+  var WISH_THEMES = [
+    { re: /钱|财|富|暴富|加薪|涨薪|发财|money|财运|赚钱|收入|股票|中奖/,
+      tag:'财运', open:['愿财路亨通','求财得财','聚四方才气'],
+      close:'财源广进，富足顺遂，金银满室' },
+    { re: /学业|考试|考研|上岸|学习|升学|论文|分数|成绩|上岸|offer|录取|毕业/,
+      tag:'学业', open:['愿笔下生花','考运亨通','慧心通明'],
+      close:'金榜题名，学业精进，一路繁花' },
+    { re: /健康|身体|病|康复|痊愈|无病|平安|无恙|健健康康|祛病/,
+      tag:'健康', open:['愿百邪不侵','病去福来','元气满身'],
+      close:'身康体健，福寿绵长，无病无忧' },
+    { re: /姻缘|爱情|脱单|恋爱|结婚|喜欢|对象|幸福|相伴|脱单/,
+      tag:'姻缘', open:['愿良缘早至','两情相悦','红鸾星动'],
+      close:'良缘天成，佳偶成双，相伴一生' },
+    { re: /事业|工作|创业|升职|晋级|项目|生意|业绩|offer|面试|入职/,
+      tag:'事业', open:['愿步步高升','乘风而上','宏图大展'],
+      close:'事业顺遂，前程远大，贵人相扶' },
+    { re: /顺利|好运|顺|转运|时来运转|心想事成|万事|一切/,
+      tag:'顺遂', open:['愿诸事可期','时来运转','得偿所愿'],
+      close:'诸事顺遂，好运常伴，平安如意' }
+  ];
+  var DEFAULT_THEME = { open:['愿心之所向','所求皆有回响','所愿皆可期'],
+                        close:'万事顺遂，心想事成，平安欢喜' };
+
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+  // 根据佛 + 心愿主题 + 随机句式，生成多样化祝福语
+  function blessResult(b, wish) {
+    if (!b.titles || !b.titles.length) return b.words;
+    var theme = DEFAULT_THEME;
+    if (wish) {
+      for (var i = 0; i < WISH_THEMES.length; i++) {
+        if (WISH_THEMES[i].re.test(wish)) { theme = WISH_THEMES[i]; break; }
+      }
+    }
+    var title = pick(b.titles), open = pick(theme.open), close = theme.close;
+    var w = wish ? '「' + wish + '」' : '此愿';
+    var templates = [
+      title + '，' + w + '终得所愿。' + open + '，' + close + '。',
+      '诚心已至' + title + '座前，' + w + '必有回响——' + open + '，' + close + '。',
+      open + '，' + title + '为证，' + w + '得佑。' + close + '。',
+      title + '加持，' + w + '可期。' + open + '，' + close + '。'
+    ];
+    return pick(templates);
+  }
 
   var track = document.getElementById('carousel-track');
   var currentBuddhaIndex = 0;
@@ -263,7 +326,7 @@ body {
         state.accepted = true;
         state.missStreak = 0;
         resultEl.className = 'gold';
-        resultEl.innerHTML = '✨ 佛已应允 · ' + b.words;
+        resultEl.innerHTML = '✨ 佛已应允 · ' + blessResult(b, state.wish);
       } else {
         state.missStreak += 1;
         resultEl.className = '';
