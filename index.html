@@ -48,11 +48,12 @@ body {
 #carousel-track {
   display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch; scrollbar-width: none; cursor: grab;
+  padding: 0 14%;
 }
 #carousel-track::-webkit-scrollbar { display: none; }
 .buddha-slot {
-  flex: 0 0 72%; scroll-snap-align: center;
-  margin: 0 auto; padding: 14px; text-align: center;
+  flex: 0 0 100%; scroll-snap-align: center;
+  padding: 14px; text-align: center;
   background: rgba(255,255,255,0.06); border-radius: 14px;
   border: 2px solid transparent; transition: border-color .2s, transform .2s;
 }
@@ -84,7 +85,8 @@ body {
 #coin-area { display: flex; flex-direction: column; align-items: center; margin-bottom: 14px; }
 .coin-stage { perspective: 600px; width: 120px; height: 120px; margin-bottom: 12px; animation: coinBob 2s ease-in-out infinite; }
 #coin {
-  position: relative; width: 100%; height: 100%; transform-style: preserve-3d; transition: transform .7s cubic-bezier(.2,.8,.3,1);
+  position: relative; width: 100%; height: 100%; transform-style: preserve-3d;
+  transition: transform 1.25s cubic-bezier(.3,.7,.15,1);
 }
 .coin-face { position: absolute; inset: 0; border-radius: 50%; backface-visibility: hidden; background-size: cover; background-position: center; }
 #coin-head {
@@ -168,8 +170,6 @@ body {
   'use strict';
 
   var BUDDHAS = [
-    { id:'self',  name:'信自己', rate:0.50, words:'心诚则灵，你自己最灵',  img:null,
-      titles:['笃定的你','心诚的你','相信自己的你'] },
     { id:'guanyin', name:'观音', rate:0.55, words:'慈悲加持，所愿皆成',  img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-57-47.png',
       titles:['大慈大悲的观音菩萨','慈航普渡的观世音','愿垂慈悯的观音'] },
     { id:'mile',  name:'弥勒', rate:0.60, words:'笑口常开，好运自然来',  img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-05.png',
@@ -183,7 +183,9 @@ body {
     { id:'dizang',name:'地藏', rate:0.54, words:'誓愿深重，苦难得度',  img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-59-16.png',
       titles:['誓度众生的地藏','慈心悲愿的地藏王','静护十方的地藏'] },
     { id:'yaoshi',name:'药师', rate:0.56, words:'消灾延寿，身心安康',  img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-59-34.png',
-      titles:['消灾延寿的药师佛','琉璃光明的药师如来','福慧双修的药师'] }
+      titles:['消灾延寿的药师佛','琉璃光明的药师如来','福慧双修的药师'] },
+    { id:'self',  name:'信自己', rate:0.50, words:'心诚则灵，你自己最灵',  img:null,
+      titles:['笃定的你','心诚的你','相信自己的你'] }
   ];
 
   // 心愿主题分类：按关键词匹配，命中后生成对应风格的祝福
@@ -301,6 +303,7 @@ body {
   var flipping = false;
 
   var state = { throws: 0, missStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
+  var spin = 0; // 累计旋转角度，确保每次投币都有完整翻转动画
 
   function tossCoin() {
     if (flipping) return; // animating
@@ -314,8 +317,9 @@ body {
     flipping = true;
     coin.classList.remove('still');
     btnToss.disabled = true;
-    // 720°(2 turns)→正面(字)在上；540°(1.5 turns)→反面(花)在上。让结果面朝上。
-    coin.style.transform = ok ? 'rotateY(720deg)' : 'rotateY(540deg)';
+    // 每投一次先转 720°，再依结果偏 0°(正面/字) 或 180°(反面/花)，令结果面朝上
+    spin += 720;
+    coin.style.transform = 'rotateY(' + (spin + (ok ? 0 : 180)) + 'deg)';
 
     setTimeout(function () {
       coin.classList.add('still');
@@ -333,7 +337,7 @@ body {
         resultEl.textContent = '🪙 再试一次';
       }
       updateStatus();
-    }, 700);
+    }, 1350);
   }
 
   function updateStatus() {
