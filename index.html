@@ -352,5 +352,22 @@ body {
   window.settle = settle;
 })();
 </script>
+<script>
+(function () {
+  function startGame() {
+    if (window.renderBuddhas) window.renderBuddhas();
+    if (window.renderHistory) window.renderHistory();
+    if (window.updateStatus) window.updateStatus();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('app').style.display = '';
+  }
+  if (typeof GamePlatform !== 'undefined') {
+    GamePlatform.init();
+    GamePlatform.mountGate({ gameId: 'coin-toss' }).then(startGame).catch(startGame);
+  } else {
+    startGame();
+  }
+})();
+</script>
 </body>
 </html>
