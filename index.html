@@ -154,5 +154,87 @@ body {
 </div>
 <a href="https://game-list-arv.pages.dev" class="gp-home-btn" title="主页">🏠</a>
 <script src="https://api.w1lkin.site/sdk.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var BUDDHAS = [
+    { id:'self',  name:'信自己', rate:0.50, words:'心诚则灵，你自己最灵',           img:null },
+    { id:'guanyin', name:'观音', rate:0.55, words:'慈悲加持，所愿皆成',           img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-57-47.png' },
+    { id:'mile',  name:'弥勒', rate:0.60, words:'笑口常开，好运自然来',           img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-05.png' },
+    { id:'rulai', name:'如来', rate:0.50, words:'如来见证，静待花开',             img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-20.png' },
+    { id:'wenshu',name:'文殊', rate:0.53, words:'智慧光明，迷障尽除',             img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-42.png' },
+    { id:'puxian',name:'普贤', rate:0.52, words:'行愿圆满，前路坦途',             img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-58-59.png' },
+    { id:'dizang',name:'地藏', rate:0.54, words:'誓愿深重，苦难得度',             img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-59-16.png' },
+    { id:'yaoshi',name:'药师', rate:0.56, words:'消灾延寿，身心安康',             img:'assets/pixel_art_sprite__retro_16_bit_2026-08-20T06-59-34.png' }
+  ];
+
+  var track = document.getElementById('carousel-track');
+  var currentBuddhaIndex = 0;
+
+  function renderBuddhas() {
+    track.innerHTML = '';
+    BUDDHAS.forEach(function (b, i) {
+      var slot = document.createElement('div');
+      slot.className = 'buddha-slot';
+      if (i === currentBuddhaIndex) slot.classList.add('selected');
+      if (b.img) {
+        var img = document.createElement('img');
+        img.src = b.img; img.alt = b.name;
+        slot.appendChild(img);
+      } else {
+        var e = document.createElement('div');
+        e.className = 'slot-emoji'; e.textContent = '✨';
+        slot.appendChild(e);
+      }
+      var name = document.createElement('div');
+      name.className = 'b-name'; name.textContent = b.name;
+      var rate = document.createElement('div');
+      rate.className = 'b-rate'; rate.textContent = '应验率 ' + Math.round(b.rate * 100) + '%';
+      slot.appendChild(name); slot.appendChild(rate);
+      track.appendChild(slot);
+    });
+    updateMeta();
+  }
+
+  function updateMeta() {
+    var b = BUDDHAS[currentBuddhaIndex];
+    document.getElementById('buddha-name').textContent = '「' + b.name + '」';
+    document.getElementById('buddha-words').textContent = b.words;
+    document.getElementById('buddha-rate').textContent = '应验率 ' + Math.round(b.rate * 100) + '%';
+  }
+
+  function selectBuddha(i) {
+    currentBuddhaIndex = i;
+    var slots = track.querySelectorAll('.buddha-slot');
+    slots.forEach(function (s, idx) { s.classList.toggle('selected', idx === i); });
+    var slot = slots[i];
+    if (slot) track.scrollTo({ left: slot.offsetLeft - (track.clientWidth - slot.clientWidth) / 2, behavior: 'smooth' });
+    updateMeta();
+  }
+
+  // 滑动结束时，以中心位佛为准选择
+  function pickCentered() {
+    var centerX = track.scrollLeft + track.clientWidth / 2;
+    var slots = track.querySelectorAll('.buddha-slot');
+    var best = 0, bestDist = Infinity;
+    slots.forEach(function (s, idx) {
+      var c = s.offsetLeft + s.clientWidth / 2;
+      var d = Math.abs(c - centerX);
+      if (d < bestDist) { bestDist = d; best = idx; }
+    });
+    selectBuddha(best);
+  }
+
+  track.addEventListener('scroll', function () {
+    clearTimeout(track._t);
+    track._t = setTimeout(pickCentered, 120);
+  });
+
+  window.BUDDHAS = BUDDHAS;
+  window.selectBuddha = selectBuddha;
+  window.renderBuddhas = renderBuddhas;
+})();
+</script>
 </body>
 </html>
