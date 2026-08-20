@@ -41,10 +41,10 @@ body {
 .gp-home-btn:active { opacity: 0.8; }
 
 /* 顶部标题 */
-.title { text-align: center; font-size: 30px; font-weight: 800; margin: 4px 0 12px; letter-spacing: 2px; }
+.title { text-align: center; font-size: 30px; font-weight: 800; margin: 4px 0 4px; letter-spacing: 2px; }
 
 /* 佛像轮播 */
-#carousel { position: relative; width: 100%; margin-bottom: 12px; }
+#carousel { position: relative; width: 100%; margin-bottom: 12px; padding-top: 8px; }
 #carousel-track {
   display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch; scrollbar-width: none; cursor: grab;
@@ -57,10 +57,10 @@ body {
   background: rgba(255,255,255,0.06); border-radius: 14px;
   border: 2px solid transparent; transition: border-color .2s, transform .2s;
 }
-.buddha-slot.selected { border-color: #ffd76a; transform: translateY(-3px); }
+.buddha-slot.selected { border-color: #ffd76a; }
 .buddha-slot img {
   width: 120px; height: 120px; object-fit: contain; image-rendering: pixelated;
-  margin-bottom: 6px;
+  margin-bottom: 6px; background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, rgba(0,0,0,0.2) 100%); border-radius: 12px;
 }
 .buddha-slot .slot-emoji {
   width: 120px; height: 120px; display: flex; align-items: center; justify-content: center;
@@ -125,10 +125,51 @@ body {
 .h-item .h-time { color: #a98d5f; }
 
 #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #2a1a0e; color: #ffd76a; z-index: 99; }
+
+/* 祝贺弹窗 */
+.celebrate-overlay {
+  position: fixed; inset: 0; z-index: 80; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.65); opacity: 0; pointer-events: none; transition: opacity .3s;
+}
+.celebrate-overlay.show { opacity: 1; pointer-events: auto; }
+.celebrate-card {
+  background: linear-gradient(160deg, #3d1f08, #5a3206);
+  border: 2px solid #ffd76a; border-radius: 18px; padding: 28px 24px 22px;
+  text-align: center; max-width: 300px; width: 85%; position: relative; z-index: 2;
+  box-shadow: 0 0 40px rgba(255,215,106,.35);
+  animation: popIn .4s cubic-bezier(.4,0,.2,1);
+}
+.celebrate-card .cc-icon { font-size: 48px; margin-bottom: 8px; }
+.celebrate-card .cc-bless { font-size: 16px; font-weight: 700; color: #ffd76a; line-height: 1.6; margin-bottom: 14px; }
+.celebrate-card .cc-stats { font-size: 13px; color: #d8c39a; line-height: 1.8; }
+.celebrate-card .cc-close {
+  margin-top: 14px; padding: 8px 28px; border-radius: 10px; border: 1px solid #ffd76a;
+  background: transparent; color: #ffd76a; font-size: 15px; cursor: pointer;
+}
+.celebrate-card .cc-close:active { background: rgba(255,215,106,.15); }
+@keyframes popIn { 0% { transform: scale(.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+
+/* 撒花粒子 */
+.confetti {
+  position: fixed; z-index: 81; pointer-events: none;
+  font-size: 22px; animation: fall linear forwards;
+}
+@keyframes fall {
+  0% { transform: translateY(-80px) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: 0; }
+}
 </style>
 </head>
 <body>
 <div id="loading">加载中…</div>
+<div id="celebrate" class="celebrate-overlay">
+  <div class="celebrate-card">
+    <div class="cc-icon">🎉</div>
+    <div class="cc-bless" id="cc-bless"></div>
+    <div class="cc-stats" id="cc-stats"></div>
+    <button class="cc-close" id="cc-close">继续</button>
+  </div>
+</div>
 <div id="app" style="display:none">
   <div class="title">🙏 佛前投币</div>
 
@@ -157,7 +198,7 @@ body {
     <button id="btn-end" class="btn btn-end">结束本次</button>
   </div>
 
-  <div id="status">本次已投 <span id="status-throws">0</span> 次 / 当前连续未中 <span id="status-miss">0</span> 次</div>
+  <div id="status">本次已投 <span id="status-throws">0</span> 次 / 连续中 <span id="status-hit">0</span> 次 / 连续未中 <span id="status-miss">0</span> 次</div>
 
   <div id="history">
     <h3>最近 10 次</h3>
@@ -302,7 +343,7 @@ body {
   var wishInput = document.getElementById('wish-input');
   var flipping = false;
 
-  var state = { throws: 0, missStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
+  var state = { throws: 0, missStreak: 0, hitStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
   var spin = 0; // 累计旋转角度，确保每次投币都有完整翻转动画
 
   function tossCoin() {
@@ -329,10 +370,14 @@ body {
       if (ok) {
         state.accepted = true;
         state.missStreak = 0;
+        state.hitStreak = (state.hitStreak || 0) + 1;
         resultEl.className = 'gold';
-        resultEl.innerHTML = '✨ 佛已应允 · ' + blessResult(b, state.wish);
+        var bless = blessResult(b, state.wish);
+        resultEl.innerHTML = '✨ 佛已应允 · ' + bless;
+        showCelebrate(bless, state.throws, state.hitStreak);
       } else {
         state.missStreak += 1;
+        state.hitStreak = 0;
         resultEl.className = '';
         resultEl.textContent = '🪙 再试一次';
       }
@@ -343,6 +388,7 @@ body {
   function updateStatus() {
     document.getElementById('status-throws').textContent = state.throws;
     document.getElementById('status-miss').textContent = state.missStreak;
+    document.getElementById('status-hit').textContent = state.hitStreak;
   }
 
   btnToss.addEventListener('click', tossCoin);
@@ -362,7 +408,8 @@ body {
   }
 
   function resetRound() {
-    state = { throws: 0, missStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
+    state = { throws: 0, missStreak: 0, hitStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
+    spin = 0;
     wishInput.value = '';
     resultEl.textContent = '';
     resultEl.className = '';
@@ -408,6 +455,42 @@ body {
   }
 
   document.getElementById('btn-end').addEventListener('click', settle);
+
+  // 祝贺弹窗 + 撒花
+  var celebOverlay = document.getElementById('celebrate');
+  var celebBless = document.getElementById('cc-bless');
+  var celebStats = document.getElementById('cc-stats');
+  var celebClose = document.getElementById('cc-close');
+
+  function showCelebrate(bless, throws, hits) {
+    celebBless.textContent = bless;
+    celebStats.textContent = '本次已投 ' + throws + ' 次 · 连续中 ' + hits + ' 次';
+    celebOverlay.classList.add('show');
+    spawnConfetti();
+  }
+
+  celebClose.addEventListener('click', function () {
+    celebOverlay.classList.remove('show');
+  });
+  celebOverlay.addEventListener('click', function (e) {
+    if (e.target === celebOverlay) celebOverlay.classList.remove('show');
+  });
+
+  function spawnConfetti() {
+    var emojis = ['🌸','✨','💮','🏵️','🎊','🌟','🪷','💫'];
+    var count = 28;
+    for (var i = 0; i < count; i++) {
+      var p = document.createElement('span');
+      p.className = 'confetti';
+      p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      p.style.left = Math.random() * 100 + '%';
+      p.style.animationDuration = (1.8 + Math.random() * 2.2) + 's';
+      p.style.animationDelay = Math.random() * 0.6 + 's';
+      p.style.fontSize = (18 + Math.random() * 16) + 'px';
+      document.body.appendChild(p);
+      setTimeout(function () { p.remove(); }, 3500);
+    }
+  }
 
   renderHistory();
 
