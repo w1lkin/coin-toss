@@ -280,10 +280,76 @@ body {
 
   btnToss.addEventListener('click', tossCoin);
 
+  var HISTORY_KEY = 'coin-toss:history';
+  var HISTORY = loadHistory();
+
+  function loadHistory() {
+    try {
+      var arr = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) { return []; }
+  }
+
+  function saveHistory() {
+    try { localStorage.setItem(HISTORY_KEY, JSON.stringify(HISTORY)); } catch (e) { /* ignore */ }
+  }
+
+  function resetRound() {
+    state = { throws: 0, missStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
+    wishInput.value = '';
+    resultEl.textContent = '';
+    resultEl.className = '';
+    updateStatus();
+  }
+
+  function settle() {
+    HISTORY.push({
+      wish: state.wish || '（未写心愿）',
+      buddha: state.buddhaName,
+      throws: state.throws,
+      accepted: state.accepted,
+      ts: Date.now()
+    });
+    if (HISTORY.length > 10) HISTORY = HISTORY.slice(HISTORY.length - 10);
+    saveHistory();
+    renderHistory();
+    resetRound();
+  }
+
+  function renderHistory() {
+    var box = document.getElementById('history');
+    box.querySelectorAll('.h-item').forEach(function (n) { n.remove(); });
+    var h = box.querySelector('h3');
+    HISTORY.slice().reverse().forEach(function (r) {
+      var div = document.createElement('div');
+      div.className = 'h-item' + (r.accepted ? ' accepted' : '');
+      var time = new Date(r.ts);
+      var pad = function (n) { return String(n).padStart(2, '0'); };
+      var timeStr = pad(time.getMonth() + 1) + '-' + pad(time.getDate()) + ' ' + pad(time.getHours()) + ':' + pad(time.getMinutes());
+      div.innerHTML =
+        '<div class="h-wish">' + escapeHtml(r.wish) + '</div>' +
+        '<div>' + escapeHtml(r.buddha) + ' · 投了' + r.throws + '回 · ' + (r.accepted ? '已应允 ✅' : '未中') +
+        ' <span class="h-time">' + timeStr + '</span></div>';
+      box.insertBefore(div, h.nextSibling);
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
+  document.getElementById('btn-end').addEventListener('click', settle);
+
+  renderHistory();
+
   window.BUDDHAS = BUDDHAS;
   window.selectBuddha = selectBuddha;
   window.renderBuddhas = renderBuddhas;
   window.updateStatus = updateStatus;
+  window.renderHistory = renderHistory;
+  window.settle = settle;
 })();
 </script>
 </body>
