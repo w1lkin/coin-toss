@@ -46,9 +46,9 @@ body {
 /* 佛像轮播 */
 #carousel { position: relative; width: 100%; margin-bottom: 12px; padding-top: 8px; }
 #carousel-track {
-  display: flex; overflow-x: auto; scroll-snap-type: x mandatory;
+  display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch; scrollbar-width: none; cursor: grab;
-  padding: 0 14%; gap: 8px;
+  padding: 0 14%; gap: 8px; touch-action: pan-x;
 }
 #carousel-track::-webkit-scrollbar { display: none; }
 .buddha-slot {
@@ -113,14 +113,16 @@ body {
 #result.gold { color: #ffd76a; text-shadow: 0 0 12px rgba(255,215,106,.7); }
 
 /* 状态区 */
-#status { text-align: center; font-size: 13px; color: #d8c39a; margin-bottom: 14px; }
+#status { text-align: center; font-size: 13px; color: #d8c39a; margin-bottom: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* 历史 */
 #history { margin-top: 4px; }
 #history h3 { font-size: 15px; color: #ffd76a; margin-bottom: 6px; }
 .h-item { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 8px 10px; margin-bottom: 6px; font-size: 12px; line-height: 1.5; color: #ead9b3; }
 .h-item .h-wish { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
-.h-item.accepted { border-left: 3px solid #ffd76a; }
+.h-item.tier-1 { border-left: 3px solid #ffd76a; }
+.h-item.tier-2 { border-left: 3px solid #c9a84c; }
+.h-item.tier-3 { border-left: 3px solid rgba(255,255,255,0.2); }
 .h-item .h-time { color: #a98d5f; }
 
 #loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: #2a1a0e; color: #ffd76a; z-index: 99; }
@@ -229,7 +231,7 @@ body {
     <div id="result"></div>
   </div>
 
-  <div id="status">本次已投 <span id="status-throws">0</span> 次 · 中 <span id="status-hit">0</span>/<span id="status-total">0</span> · 成功率 <span id="status-rate">--</span></div>
+  <div id="status">已投 <span id="status-throws">0</span> 次 · 中 <span id="status-hit">0</span>/<span id="status-total">0</span> · 成功率 <span id="status-rate">--</span></div>
 
   <div id="history">
     <h3>最近 10 次</h3>
@@ -361,10 +363,7 @@ body {
     selectBuddha(best);
   }
 
-  track.addEventListener('scroll', function () {
-    clearTimeout(track._t);
-    track._t = setTimeout(pickCentered, 60);
-  });
+  track.addEventListener('scroll', pickCentered, { passive: true });
 
   var coin = document.getElementById('coin');
   var resultEl = document.getElementById('result');
@@ -489,13 +488,22 @@ body {
     var h = box.querySelector('h3');
     HISTORY.slice().reverse().forEach(function (r) {
       var div = document.createElement('div');
-      div.className = 'h-item' + (r.accepted ? ' accepted' : '');
+      var totalHits = r.totalHits || 0;
+      var rate = r.throws > 0 ? totalHits / r.throws : 0;
+      var tier, tierLabel;
+      if (r.throws === 0) { tier = 0; tierLabel = '尚未投币'; }
+      else if (rate >= 0.8) { tier = 1; tierLabel = '有求必应'; }
+      else if (rate >= 0.6) { tier = 2; tierLabel = '心诚则灵'; }
+      else if (rate >= 0.4) { tier = 3; tierLabel = '再修善缘'; }
+      else { tier = 0; tierLabel = '缘分未到'; }
+      div.className = 'h-item' + (tier > 0 ? ' tier-' + tier : '');
       var time = new Date(r.ts);
       var pad = function (n) { return String(n).padStart(2, '0'); };
       var timeStr = pad(time.getMonth() + 1) + '-' + pad(time.getDate()) + ' ' + pad(time.getHours()) + ':' + pad(time.getMinutes());
+      var wishText = r.wish && r.wish !== '（未写心愿）' ? r.wish : '默祷于心';
       div.innerHTML =
-        '<div class="h-wish">' + escapeHtml(r.wish) + '</div>' +
-        '<div>' + escapeHtml(r.buddha) + ' · 投了' + r.throws + '回 · 中' + (r.totalHits || 0) + '/' + r.throws + ' · ' + (r.accepted ? '已应允 ✅' : '未中') +
+        '<div class="h-wish">' + escapeHtml(wishText) + '</div>' +
+        '<div>' + escapeHtml(r.buddha) + ' · 投了' + r.throws + '回 · 中' + totalHits + '/' + r.throws + ' · ' + tierLabel +
         ' <span class="h-time">' + timeStr + '</span></div>';
       box.insertBefore(div, h.nextSibling);
     });
@@ -521,7 +529,7 @@ body {
   function showCelebrate(bless, throws, hits) {
     celebBless.textContent = bless;
     var rate = throws > 0 ? Math.round(hits / throws * 100) : 0;
-    celebStats.textContent = '本次已投 ' + throws + ' 次 · 中 ' + hits + '/' + throws + ' · 成功率 ' + rate + '%';
+    celebStats.textContent = '已投 ' + throws + ' 次 · 中 ' + hits + '/' + throws + ' · 成功率 ' + rate + '%';
     celebOverlay.classList.add('show');
     spawnConfetti();
   }
