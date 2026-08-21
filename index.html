@@ -502,7 +502,7 @@ body {
         '<div class="h-wish">' + escapeHtml(wishText) + '</div>' +
         '<div>' + escapeHtml(r.buddha) + ' · 投了' + r.throws + '回 · 中' + totalHits + '/' + r.throws + ' · ' + tierLabel +
         ' <span class="h-time">' + timeStr + '</span></div>';
-      box.insertBefore(div, h.nextSibling);
+      box.appendChild(div);
     });
   }
 
