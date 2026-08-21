@@ -309,7 +309,9 @@ body {
   }
 
   var track = document.getElementById('carousel-track');
-  var currentBuddhaIndex = 0;
+  var currentBuddhaIndex = (function () {
+    try { var v = localStorage.getItem('coinTossBuddhaIndex'); return v !== null ? parseInt(v, 10) : 0; } catch (e) { return 0; }
+  })();
 
   function renderBuddhas() {
     track.innerHTML = '';
@@ -345,6 +347,7 @@ body {
 
   function selectBuddha(i) {
     currentBuddhaIndex = i;
+    try { localStorage.setItem('coinTossBuddhaIndex', i); } catch (e) { /* ignore */ }
     var slots = track.querySelectorAll('.buddha-slot');
     slots.forEach(function (s, idx) { s.classList.toggle('selected', idx === i); });
     updateMeta();
@@ -370,7 +373,7 @@ body {
   var wishInput = document.getElementById('wish-input');
   var flipping = false;
 
-  var state = { throws: 0, totalHits: 0, missStreak: 0, hitStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
+  var state = { throws: 0, totalHits: 0, missStreak: 0, hitStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[currentBuddhaIndex].name };
   var spin = 0; // 累计旋转角度，确保每次投币都有完整翻转动画
 
   function tossCoin() {
@@ -435,7 +438,7 @@ body {
   }
 
   function resetRound() {
-    state = { throws: 0, totalHits: 0, missStreak: 0, hitStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
+    state = { throws: 0, totalHits: 0, missStreak: 0, hitStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[currentBuddhaIndex].name };
     spin = 0;
     wishInput.value = '';
     updateStatus();
@@ -480,7 +483,7 @@ body {
     var box = document.getElementById('history');
     box.querySelectorAll('.h-item').forEach(function (n) { n.remove(); });
     var h = box.querySelector('h3');
-    HISTORY.slice().sort(function (a, b) { return b.ts - a.ts; }).forEach(function (r) {
+    HISTORY.slice().reverse().forEach(function (r) {
       var div = document.createElement('div');
       var totalHits = r.totalHits || 0;
       var rate = r.throws > 0 ? totalHits / r.throws : 0;
@@ -593,6 +596,15 @@ body {
 
   function startGame() {
     if (window.renderBuddhas) window.renderBuddhas();
+    try {
+      var savedIdx = parseInt(localStorage.getItem('coinTossBuddhaIndex'), 10);
+      if (!isNaN(savedIdx)) {
+        var slots = window.track ? window.track.querySelectorAll('.buddha-slot') : [];
+        if (slots[savedIdx]) {
+          window.track.scrollLeft = slots[savedIdx].offsetLeft - window.track.clientWidth / 2 + slots[savedIdx].clientWidth / 2;
+        }
+      }
+    } catch (e) { /* ignore */ }
     if (window.renderHistory) window.renderHistory();
     if (window.updateStatus) window.updateStatus();
     document.getElementById('loading').style.display = 'none';
