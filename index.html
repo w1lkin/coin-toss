@@ -486,7 +486,7 @@ body {
     var box = document.getElementById('history');
     box.querySelectorAll('.h-item').forEach(function (n) { n.remove(); });
     var h = box.querySelector('h3');
-    HISTORY.slice().reverse().forEach(function (r) {
+    HISTORY.slice().sort(function (a, b) { return b.ts - a.ts; }).forEach(function (r) {
       var div = document.createElement('div');
       var totalHits = r.totalHits || 0;
       var rate = r.throws > 0 ? totalHits / r.throws : 0;
