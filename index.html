@@ -229,7 +229,7 @@ body {
     <div id="result"></div>
   </div>
 
-  <div id="status">本次已投 <span id="status-throws">0</span> 次 / 连续中 <span id="status-hit">0</span> 次 / 连续未中 <span id="status-miss">0</span> 次</div>
+  <div id="status">本次已投 <span id="status-throws">0</span> 次 · 中 <span id="status-hit">0</span>/<span id="status-total">0</span> · 成功率 <span id="status-rate">--</span></div>
 
   <div id="history">
     <h3>最近 10 次</h3>
@@ -372,7 +372,7 @@ body {
   var wishInput = document.getElementById('wish-input');
   var flipping = false;
 
-  var state = { throws: 0, missStreak: 0, hitStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
+  var state = { throws: 0, totalHits: 0, missStreak: 0, hitStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
   var spin = 0; // 累计旋转角度，确保每次投币都有完整翻转动画
 
   function tossCoin() {
@@ -398,12 +398,13 @@ body {
 
       if (ok) {
         state.accepted = true;
+        state.totalHits += 1;
         state.missStreak = 0;
         state.hitStreak = (state.hitStreak || 0) + 1;
         resultEl.className = 'gold';
         var bless = blessResult(b, state.wish);
         resultEl.innerHTML = '✨ 佛已应允 · ' + bless;
-        showCelebrate(bless, state.throws, state.hitStreak);
+        showCelebrate(bless, state.throws, state.totalHits);
       } else {
         state.missStreak += 1;
         state.hitStreak = 0;
@@ -416,8 +417,10 @@ body {
 
   function updateStatus() {
     document.getElementById('status-throws').textContent = state.throws;
-    document.getElementById('status-miss').textContent = state.missStreak;
-    document.getElementById('status-hit').textContent = state.hitStreak;
+    document.getElementById('status-hit').textContent = state.totalHits;
+    document.getElementById('status-total').textContent = state.throws;
+    var rate = state.throws > 0 ? Math.round(state.totalHits / state.throws * 100) + '%' : '--';
+    document.getElementById('status-rate').textContent = rate;
   }
 
   btnToss.addEventListener('click', tossCoin);
@@ -437,7 +440,7 @@ body {
   }
 
   function resetRound() {
-    state = { throws: 0, missStreak: 0, hitStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
+    state = { throws: 0, totalHits: 0, missStreak: 0, hitStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
     spin = 0;
     wishInput.value = '';
     resultEl.textContent = '';
@@ -451,7 +454,8 @@ body {
     document.getElementById('sc-wish').textContent = state.wish || '（未写心愿）';
     document.getElementById('sc-buddha').textContent = state.buddhaName || buddha.name;
     document.getElementById('sc-throws').textContent = state.throws;
-    document.getElementById('sc-result').textContent = state.accepted ? '已应允 ✅' : '未中';
+    var rate = state.throws > 0 ? Math.round(state.totalHits / state.throws * 100) : 0;
+    document.getElementById('sc-result').textContent = '中 ' + state.totalHits + '/' + state.throws + ' · 成功率 ' + rate + '%';
     document.getElementById('settle-overlay').classList.add('show');
   }
 
@@ -460,6 +464,7 @@ body {
       wish: state.wish || '（未写心愿）',
       buddha: state.buddhaName,
       throws: state.throws,
+      totalHits: state.totalHits,
       accepted: state.accepted,
       ts: Date.now()
     });
@@ -490,7 +495,7 @@ body {
       var timeStr = pad(time.getMonth() + 1) + '-' + pad(time.getDate()) + ' ' + pad(time.getHours()) + ':' + pad(time.getMinutes());
       div.innerHTML =
         '<div class="h-wish">' + escapeHtml(r.wish) + '</div>' +
-        '<div>' + escapeHtml(r.buddha) + ' · 投了' + r.throws + '回 · ' + (r.accepted ? '已应允 ✅' : '未中') +
+        '<div>' + escapeHtml(r.buddha) + ' · 投了' + r.throws + '回 · 中' + (r.totalHits || 0) + '/' + r.throws + ' · ' + (r.accepted ? '已应允 ✅' : '未中') +
         ' <span class="h-time">' + timeStr + '</span></div>';
       box.insertBefore(div, h.nextSibling);
     });
@@ -515,7 +520,8 @@ body {
 
   function showCelebrate(bless, throws, hits) {
     celebBless.textContent = bless;
-    celebStats.textContent = '本次已投 ' + throws + ' 次 · 连续中 ' + hits + ' 次';
+    var rate = throws > 0 ? Math.round(hits / throws * 100) : 0;
+    celebStats.textContent = '本次已投 ' + throws + ' 次 · 中 ' + hits + '/' + throws + ' · 成功率 ' + rate + '%';
     celebOverlay.classList.add('show');
     spawnConfetti();
   }
