@@ -108,12 +108,8 @@ body {
 .btn-toss { background: linear-gradient(180deg, #ffd76a, #e8a838); color: #5a3206; }
 .btn-toss:disabled { opacity: .45; }
 
-/* 结果反馈 */
-#result { min-height: 30px; text-align: center; font-size: 15px; margin: 10px 0 4px; font-weight: 600; }
-#result.gold { color: #ffd76a; text-shadow: 0 0 12px rgba(255,215,106,.7); }
-
 /* 状态区 */
-#status { text-align: center; font-size: 13px; color: #d8c39a; margin-bottom: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#status { text-align: center; font-size: 13px; color: #d8c39a; margin: 4px 0 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* 历史 */
 #history { margin-top: 4px; }
@@ -141,6 +137,11 @@ body {
   animation: popIn .4s cubic-bezier(.4,0,.2,1);
 }
 .celebrate-card .cc-icon { font-size: 48px; margin-bottom: 8px; }
+.celebrate-card .cc-icon-miss { display: none; }
+.celebrate-overlay.miss .cc-icon-win { display: none; }
+.celebrate-overlay.miss .cc-icon-miss { display: block; }
+.celebrate-overlay.miss .cc-bless { color: #d8c39a; }
+.celebrate-overlay.miss .cc-end { display: none; }
 .celebrate-card .cc-bless { font-size: 16px; font-weight: 700; color: #ffd76a; line-height: 1.6; margin-bottom: 14px; }
 .celebrate-card .cc-stats { font-size: 13px; color: #d8c39a; line-height: 1.8; }
 .celebrate-card .cc-btns { display: flex; gap: 10px; margin-top: 14px; }
@@ -182,10 +183,11 @@ body {
 <div id="loading">加载中…</div>
 <div id="celebrate" class="celebrate-overlay">
   <div class="celebrate-card">
-    <div class="cc-icon">🎉</div>
+    <div class="cc-icon cc-icon-win">🎉</div>
+    <div class="cc-icon cc-icon-miss">🙏</div>
     <div class="cc-bless" id="cc-bless"></div>
     <div class="cc-stats" id="cc-stats"></div>
-    <div class="cc-btns">
+    <div class="cc-btns" id="cc-btns">
       <button class="cc-end" id="cc-end">结束本次</button>
       <button class="cc-close" id="cc-close">继续</button>
     </div>
@@ -228,7 +230,6 @@ body {
       </div>
     </div>
     <button id="btn-toss" class="btn btn-toss">投币</button>
-    <div id="result"></div>
   </div>
 
   <div id="status">已投 <span id="status-throws">0</span> 次 · 中 <span id="status-hit">0</span>/<span id="status-total">0</span> · 成功率 <span id="status-rate">--</span></div>
@@ -366,7 +367,6 @@ body {
   track.addEventListener('scroll', pickCentered, { passive: true });
 
   var coin = document.getElementById('coin');
-  var resultEl = document.getElementById('result');
   var btnToss = document.getElementById('btn-toss');
   var wishInput = document.getElementById('wish-input');
   var flipping = false;
@@ -400,15 +400,12 @@ body {
         state.totalHits += 1;
         state.missStreak = 0;
         state.hitStreak = (state.hitStreak || 0) + 1;
-        resultEl.className = 'gold';
         var bless = blessResult(b, state.wish);
-        resultEl.innerHTML = '✨ 佛已应允 · ' + bless;
-        showCelebrate(bless, state.throws, state.totalHits);
+        showCelebrate(true, bless, state.throws, state.totalHits);
       } else {
         state.missStreak += 1;
         state.hitStreak = 0;
-        resultEl.className = '';
-        resultEl.textContent = '🪙 再试一次';
+        showCelebrate(false, '缘分未到，再试一次', state.throws, state.totalHits);
       }
       updateStatus();
     }, 1350);
@@ -442,8 +439,6 @@ body {
     state = { throws: 0, totalHits: 0, missStreak: 0, hitStreak: 0, wish: '', accepted: false, buddhaName: BUDDHAS[0].name };
     spin = 0;
     wishInput.value = '';
-    resultEl.textContent = '';
-    resultEl.className = '';
     updateStatus();
   }
 
@@ -526,12 +521,18 @@ body {
   var celebStats = document.getElementById('cc-stats');
   var celebClose = document.getElementById('cc-close');
 
-  function showCelebrate(bless, throws, hits) {
+  function showCelebrate(ok, bless, throws, hits) {
     celebBless.textContent = bless;
-    var rate = throws > 0 ? Math.round(hits / throws * 100) : 0;
-    celebStats.textContent = '已投 ' + throws + ' 次 · 中 ' + hits + '/' + throws + ' · 成功率 ' + rate + '%';
+    if (ok) {
+      celebOverlay.classList.remove('miss');
+      var rate = throws > 0 ? Math.round(hits / throws * 100) : 0;
+      celebStats.textContent = '已投 ' + throws + ' 次 · 中 ' + hits + '/' + throws + ' · 成功率 ' + rate + '%';
+      spawnConfetti();
+    } else {
+      celebOverlay.classList.add('miss');
+      celebStats.textContent = '已投 ' + throws + ' 次';
+    }
     celebOverlay.classList.add('show');
-    spawnConfetti();
   }
 
   celebClose.addEventListener('click', function () {
