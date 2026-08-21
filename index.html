@@ -309,6 +309,7 @@ body {
   }
 
   var track = document.getElementById('carousel-track');
+  window.track = track;
   var currentBuddhaIndex = (function () {
     try { var v = localStorage.getItem('coinTossBuddhaIndex'); return v !== null ? parseInt(v, 10) : 0; } catch (e) { return 0; }
   })();
@@ -598,11 +599,13 @@ body {
     if (window.renderBuddhas) window.renderBuddhas();
     try {
       var savedIdx = parseInt(localStorage.getItem('coinTossBuddhaIndex'), 10);
-      if (!isNaN(savedIdx)) {
-        var slots = window.track ? window.track.querySelectorAll('.buddha-slot') : [];
-        if (slots[savedIdx]) {
-          window.track.scrollLeft = slots[savedIdx].offsetLeft - window.track.clientWidth / 2 + slots[savedIdx].clientWidth / 2;
-        }
+      if (!isNaN(savedIdx) && savedIdx > 0) {
+        requestAnimationFrame(function () {
+          var slots = window.track ? window.track.querySelectorAll('.buddha-slot') : [];
+          if (slots[savedIdx]) {
+            window.track.scrollLeft = slots[savedIdx].offsetLeft - window.track.clientWidth / 2 + slots[savedIdx].clientWidth / 2;
+          }
+        });
       }
     } catch (e) { /* ignore */ }
     if (window.renderHistory) window.renderHistory();
